@@ -37,3 +37,17 @@ def get_settings(user_id: int) -> Dict:
         cur = c.execute("SELECT rating_type, city_limit, lang FROM users WHERE user_id=?", (user_id,))
         r = cur.fetchone()
         return {"rating_type": r[0], "city_limit": r[1], "lang": r[2]}
+
+
+def set_rating_type(user_id: int, rating_type: str):
+    ensure_user(user_id)
+    with _conn() as c:
+        c.execute("UPDATE users SET rating_type=? WHERE user_id=?", (rating_type, user_id))
+        c.commit()
+
+
+def set_limit(user_id: int, limit: int):
+    ensure_user(user_id)
+    with _conn() as c:
+        c.execute("UPDATE users SET city_limit=? WHERE user_id=?", (limit, user_id))
+        c.commit()
