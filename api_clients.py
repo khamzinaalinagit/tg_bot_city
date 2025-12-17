@@ -13,3 +13,9 @@ class GeoDBClient:
             "X-RapidAPI-Key": RAPIDAPI_KEY,
             "X-RapidAPI-Host": RAPIDAPI_HOST,
         }
+
+    def find_city(self, name: str, limit: int = 5) -> List[Dict]:
+        params = {"namePrefix": name, "limit": limit, "sort": "-population"}
+        r = requests.get(f"{self.BASE}/cities", headers=self.headers, params=params, timeout=20)
+        r.raise_for_status()
+        return r.json().get("data", [])
