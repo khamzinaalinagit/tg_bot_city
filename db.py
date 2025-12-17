@@ -51,3 +51,10 @@ def set_limit(user_id: int, limit: int):
     with _conn() as c:
         c.execute("UPDATE users SET city_limit=? WHERE user_id=?", (limit, user_id))
         c.commit()
+
+
+def set_lang(user_id: int, lang: str):
+    ensure_user(user_id)
+    with _conn() as c:
+        c.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))
+        c.commit()
