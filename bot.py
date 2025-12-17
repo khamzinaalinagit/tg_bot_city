@@ -67,6 +67,7 @@ async def _get_temp(weather: WeatherClient, lat: float, lon: float) -> Optional[
     """Температура из OpenWeather (если ключ задан)."""
     return await _to_thread(weather.temp_celsius, lat, lon)
 
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Команда /start — приветствие и краткая инструкция."""
     init_db()
@@ -84,5 +85,21 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "• /set_limit 5..50 — сколько городов в рейтинге\n"
         "• /set_rating population|temp — тип рейтинга\n"
         "• /set_lang ru|en — язык (пока влияет только на настройки)\n"
+    )
+    await update.message.reply_text(text)
+
+
+async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /help — список команд."""
+    text = (
+        "Команды:\n"
+        "/start — старт\n"
+        "/help — помощь\n"
+        "/weather <город> — погода по городу\n"
+        "/top — рейтинг городов\n"
+        "/settings — показать настройки\n"
+        "/set_limit <число> — лимит рейтинга (5..50)\n"
+        "/set_rating population|temp — тип рейтинга\n"
+        "/set_lang ru|en — язык\n"
     )
     await update.message.reply_text(text)
