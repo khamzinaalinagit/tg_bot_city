@@ -24,3 +24,12 @@ class GeoDBClient:
         r = requests.get(f"{self.BASE}/cities/{city_id}", headers=self.headers, timeout=20)
         r.raise_for_status()
         return r.json().get("data", {})
+
+    def top_cities_by_population(self, limit: int = 10, country_code: Optional[str] = None) -> List[Dict]:
+        params = {"limit": limit, "sort": "-population"}
+        if country_code:
+            params["countryIds"] = country_code
+        r = requests.get(f"{self.BASE}/cities", headers=self.headers, params=params, timeout=20)
+        r.raise_for_status()
+        return r.json().get("data", [])
+
