@@ -353,3 +353,36 @@ async def cmd_top(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     await update.message.reply_text("Неизвестный тип рейтинга. Используй /set_rating population|temp")
+
+
+def main() -> None:
+    if not TELEGRAM_TOKEN:
+        raise RuntimeError("TELEGRAM_TOKEN не задан. Создай .env и добавь TELEGRAM_TOKEN=...")
+
+    init_db()
+
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+
+    # Инициализируем клиентов и кладём их в bot_data, чтобы не создавать на каждый запрос
+    app.bot_data["geo"] = GeoDBClient()
+    app.bot_data["weather"] = WeatherClient()
+
+    # Команды
+    app.add_handler(CommandHandler("start", cmd_start))
+    app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("settings", cmd_settings))
+    app.add_handler(CommandHandler("set_limit", cmd_set_limit))
+    app.add_handler(CommandHandler("set_rating", cmd_set_rating))
+    app.add_handler(CommandHandler("set_lang", cmd_set_lang))
+    app.add_handler(CommandHandler("weather", cmd_weather))
+    app.add_handler(CommandHandler("top", cmd_top))
+
+    # Любой текст (название города / выбор номера)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+
+    # Запуск
+    app.run_polling(close_loop=False)
+
+
+if __name__ == "__main__":
+    main()
