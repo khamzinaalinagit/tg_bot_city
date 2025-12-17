@@ -66,3 +66,23 @@ async def _get_city_details(geo: GeoDBClient, city_id: str) -> Dict[str, Any]:
 async def _get_temp(weather: WeatherClient, lat: float, lon: float) -> Optional[float]:
     """Температура из OpenWeather (если ключ задан)."""
     return await _to_thread(weather.temp_celsius, lat, lon)
+
+async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /start — приветствие и краткая инструкция."""
+    init_db()
+    if update.effective_user:
+        _ = get_settings(update.effective_user.id)  # создаём/читаем настройки
+
+    text = (
+        "Привет! Я бот погоды 🌤\n\n"
+        "Как пользоваться:\n"
+        "• Просто напиши название города (например: Москва)\n"
+        "• Или командой: /weather Москва\n\n"
+        "Дополнительно:\n"
+        "• /top — рейтинг городов (по настройке)\n"
+        "• /settings — твои настройки\n"
+        "• /set_limit 5..50 — сколько городов в рейтинге\n"
+        "• /set_rating population|temp — тип рейтинга\n"
+        "• /set_lang ru|en — язык (пока влияет только на настройки)\n"
+    )
+    await update.message.reply_text(text)
