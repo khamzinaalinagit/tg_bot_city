@@ -240,6 +240,7 @@ async def cmd_weather(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         lines.append(_fmt_city_line(i, c))
     await update.message.reply_text("\n".join(lines))
 
+
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Любой текст:
@@ -286,3 +287,69 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         lines.append(_fmt_city_line(i, c))
     await update.message.reply_text("\n".join(lines))
 
+
+async def cmd_top(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /top — показывает рейтинг городов (population или temp)."""
+    init_db()
+    user_id = update.effective_user.id
+    s = get_settings(user_id)
+
+    geo: GeoDBClient = context.bot_data["geo"]
+    weather: WeatherClient = context.bot_data["weather"]
+
+    limit = int(s["city_limit"])
+    rating = s["rating_type"]
+
+    await update.message.reply_text(f"⏳ Формирую рейтинг ({rating}), лимит {limit}...")
+
+    # Берём топ городов по населению как базовый список
+    try:
+        cities = await _to_thread(geo.top_cities_by_population, limit, None)
+    except Exception as exc:
+        await update.message.reply_text(f"Ошибка GeoDB: {exc}")
+        return
+
+    if not cities:
+        await update.message.reply_text("Не удалось получить список городов.")
+        return
+
+    if rating == "population":
+        lines = ["🏆 ТОП городов по населению:"]
+        for i, c in enumerate(cities, start=1):
+            name = c.get("name", "Unknown")
+            country = c.get("country", "")
+            pop = c.get("population", "")
+            lines.append(f"{i}. {name} ({country}) — {pop}")
+        await update.message.reply_text("\n".join(lines))
+        return
+
+    if rating == "temp":
+        # Считаем температуры и сортируем по ним
+        scored = []
+        for c in cities:
+            lat = c.get("latitude")
+            lon = c.get("longitude")
+            if lat is None or lon is None:
+                continue
+            try:
+                t = await _get_temp(weather, float(lat), float(lon))
+                if t is None:
+                    continue
+                scored.append((t, c))
+            except Exception:
+                continue
+
+        if not scored:
+            await update.message.reply_text("Температуры недоступны (проверь OPENWEATHER_KEY).")
+            return
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        lines = ["🌡 ТОП городов по температуре (сейчас):"]
+        for i, (t, c) in enumerate(scored[:limit], start=1):
+            name = c.get("name", "Unknown")
+            country = c.get("country", "")
+            lines.append(f"{i}. {name} ({country}) — {t:.1f}°C")
+        await update.message.reply_text("\n".join(lines))
+        return
+
+    await update.message.reply_text("Неизвестный тип рейтинга. Используй /set_rating population|temp")
