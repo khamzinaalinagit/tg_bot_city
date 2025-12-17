@@ -18,3 +18,14 @@ def init_db():
         )
         """)
         c.commit()
+
+
+def ensure_user(user_id: int):
+    with _conn() as c:
+        cur = c.execute("SELECT user_id FROM users WHERE user_id=?", (user_id,))
+        if cur.fetchone() is None:
+            c.execute(
+                "INSERT INTO users(user_id, rating_type, city_limit, lang) VALUES(?,?,?,?)",
+                (user_id, DEFAULT_RATING, DEFAULT_LIMIT, DEFAULT_LANG)
+            )
+            c.commit()
