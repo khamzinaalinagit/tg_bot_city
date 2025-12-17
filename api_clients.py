@@ -33,3 +33,18 @@ class GeoDBClient:
         r.raise_for_status()
         return r.json().get("data", [])
 
+
+class WeatherClient:
+    BASE = "https://api.openweathermap.org/data/2.5/weather"
+
+    def __init__(self):
+        self.enabled = bool(OPENWEATHER_KEY)
+
+    def temp_celsius(self, lat: float, lon: float) -> Optional[float]:
+        if not self.enabled:
+            return None
+        params = {"lat": lat, "lon": lon, "appid": OPENWEATHER_KEY, "units": "metric"}
+        r = requests.get(self.BASE, params=params, timeout=20)
+        r.raise_for_status()
+        data = r.json()
+        return float(data["main"]["temp"])
