@@ -172,3 +172,70 @@ async def cmd_set_lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     set_lang(user_id, lang)
     await update.message.reply_text(f"✅ Язык установлен: {lang}")
+
+
+async def _reply_weather_for_city(update: Update, context: ContextTypes.DEFAULT_TYPE, city: Dict[str, Any]) -> None:
+    """Формируем ответ: справка по городу + температура (если доступно)."""
+    geo = context.bot_data["geo"]
+    weather = context.bot_data["weather"]
+
+    # Иногда в find_city данных меньше — доберём детали по id (если есть)
+    city_id = city.get("id")
+    if city_id:
+        try:
+            details = await _get_city_details(geo, city_id)
+            if details:
+                city = {**city, **details}
+        except Exception:
+            pass
+
+    info = _fmt_city_info(city)
+
+    lat = city.get("latitude")
+    lon = city.get("longitude")
+
+    temp_txt = "🌡 Температура: нет данных (не задан OPENWEATHER_KEY)"
+    if lat is not None and lon is not None:
+        try:
+            t = await _get_temp(weather, float(lat), float(lon))
+            if t is None:
+                temp_txt = "🌡 Температура: нет данных (не задан OPENWEATHER_KEY)"
+            else:
+                temp_txt = f"🌡 Температура сейчас: {t:.1f}°C"
+        except Exception as exc:
+            temp_txt = f"🌡 Температура: ошибка получения ({exc})"
+
+    await update.message.reply_text(info + "\n\n" + temp_txt)
+
+
+async def cmd_weather(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /weather <город>."""
+    geo = context.bot_data["geo"]
+    init_db()
+    user_id = update.effective_user.id
+    s = get_settings(user_id)
+
+    if not context.args:
+        await update.message.reply_text("Использование: /weather Москва")
+        return
+
+    name = " ".join(context.args).strip()
+    if not name:
+        await update.message.reply_text("Напиши название города после команды.")
+        return
+
+    candidates = await _get_city_candidates(geo, name, limit=5)
+    if not candidates:
+        await update.message.reply_text("Город не найден. Попробуй другое название.")
+        return
+
+    if len(candidates) == 1:
+        await _reply_weather_for_city(update, context, candidates[0])
+        return
+
+    # Много вариантов — сохраним в user_data и попросим выбрать номер
+    context.user_data["pending_cities"] = candidates
+    lines = ["Нашла несколько городов. Ответь номером (1..5):"]
+    for i, c in enumerate(candidates, start=1):
+        lines.append(_fmt_city_line(i, c))
+    await update.message.reply_text("\n".join(lines))
