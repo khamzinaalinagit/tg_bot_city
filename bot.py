@@ -103,3 +103,72 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/set_lang ru|en — язык\n"
     )
     await update.message.reply_text(text)
+
+
+async def cmd_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /settings — показать текущие настройки пользователя."""
+    init_db()
+    user_id = update.effective_user.id
+    s = get_settings(user_id)
+    await update.message.reply_text(
+        "⚙️ Твои настройки:\n"
+        f"• rating_type: {s['rating_type']}\n"
+        f"• city_limit: {s['city_limit']}\n"
+        f"• lang: {s['lang']}\n"
+    )
+
+
+async def cmd_set_limit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /set_limit N — сохранить лимит рейтинга в БД."""
+    init_db()
+    user_id = update.effective_user.id
+
+    if not context.args:
+        await update.message.reply_text("Использование: /set_limit 10")
+        return
+
+    try:
+        n = int(context.args[0])
+        if n < 5 or n > 50:
+            await update.message.reply_text("Лимит должен быть от 5 до 50.")
+            return
+        set_limit(user_id, n)
+        await update.message.reply_text(f"✅ Лимит установлен: {n}")
+    except Exception:
+        await update.message.reply_text("❌ Ошибка. Пример: /set_limit 10")
+
+
+async def cmd_set_rating(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /set_rating population|temp — сохраняет тип рейтинга."""
+    init_db()
+    user_id = update.effective_user.id
+
+    if not context.args:
+        await update.message.reply_text("Использование: /set_rating population|temp")
+        return
+
+    rating = context.args[0].strip().lower()
+    if rating not in {"population", "temp"}:
+        await update.message.reply_text("Допустимо: population или temp")
+        return
+
+    set_rating_type(user_id, rating)
+    await update.message.reply_text(f"✅ Тип рейтинга установлен: {rating}")
+
+
+async def cmd_set_lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Команда /set_lang ru|en — сохраняет язык."""
+    init_db()
+    user_id = update.effective_user.id
+
+    if not context.args:
+        await update.message.reply_text("Использование: /set_lang ru|en")
+        return
+
+    lang = context.args[0].strip().lower()
+    if lang not in {"ru", "en"}:
+        await update.message.reply_text("Допустимо: ru или en")
+        return
+
+    set_lang(user_id, lang)
+    await update.message.reply_text(f"✅ Язык установлен: {lang}")
