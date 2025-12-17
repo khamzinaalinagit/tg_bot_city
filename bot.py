@@ -61,3 +61,8 @@ async def _get_city_candidates(geo: GeoDBClient, name: str, limit: int) -> List[
 async def _get_city_details(geo: GeoDBClient, city_id: str) -> Dict[str, Any]:
     """Запрашиваем детальную информацию о городе."""
     return await _to_thread(geo.city_details, city_id)
+
+
+async def _get_temp(weather: WeatherClient, lat: float, lon: float) -> Optional[float]:
+    """Температура из OpenWeather (если ключ задан)."""
+    return await _to_thread(weather.temp_celsius, lat, lon)
