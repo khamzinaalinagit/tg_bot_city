@@ -29,3 +29,11 @@ def ensure_user(user_id: int):
                 (user_id, DEFAULT_RATING, DEFAULT_LIMIT, DEFAULT_LANG)
             )
             c.commit()
+
+
+def get_settings(user_id: int) -> Dict:
+    ensure_user(user_id)
+    with _conn() as c:
+        cur = c.execute("SELECT rating_type, city_limit, lang FROM users WHERE user_id=?", (user_id,))
+        r = cur.fetchone()
+        return {"rating_type": r[0], "city_limit": r[1], "lang": r[2]}
