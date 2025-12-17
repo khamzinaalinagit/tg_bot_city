@@ -48,4 +48,16 @@ def _fmt_city_info(city: Dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
+async def _to_thread(func, *args, **kwargs):
+    """Запускает блокирующую функцию (requests) в отдельном потоке, чтобы не подвешивать бота."""
+    return await asyncio.to_thread(func, *args, **kwargs)
 
+
+async def _get_city_candidates(geo: GeoDBClient, name: str, limit: int) -> List[Dict[str, Any]]:
+    """Ищем город по имени через GeoDB (RapidAPI)."""
+    return await _to_thread(geo.find_city, name, limit)
+
+
+async def _get_city_details(geo: GeoDBClient, city_id: str) -> Dict[str, Any]:
+    """Запрашиваем детальную информацию о городе."""
+    return await _to_thread(geo.city_details, city_id)
